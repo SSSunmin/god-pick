@@ -63,14 +63,60 @@ union REGS reg;
 
 struct Star star[STARCOUNT];
 
-void GetDirection(int index);
-void ReverseDirection(int index);
-void Moveline(int index, int color);
+
+void Initstar(int index);
+void Initstage();
 void drawrectangle(int xpos, int ypos, int color);
 void mousepointer();
-void BiggerCircle(int xpos, int ypos, int color);
-void StarBiggerCircle(int xpos, int ypos, int color, int pointerindex);
+void ReverseDirection(int index);
+void GetDirection(int index);
+void Moveline(int index, int color);
+void PingPong();
 void CheckHitPoint(int xpos, int ypos,int nowrad);
+void drawcircle(int xpos, int ypos, int rad, int color);
+void BiggerCircle(int xpos, int ypos, int color);
+void MakeCircle();
+void StarBiggerCircle(int xpos, int ypos, int color, int pointerindex);
+int CheckSuccess();
+void GotoNextStage();
+void GameOver();
+
+void Initstar(int index)
+{
+	int tmpx = random(UIBOXWIDTH);
+	int tmpy = random(UIBOXHEIGHT);
+	star[index].start_x = tmpx + uiStartX;
+	star[index].start_y =tmpy+ uiStartY;
+	star[index].now_x = star[index].start_x;
+	star[index].now_y = star[index].start_y;
+	star[index].prev_x = star[index].start_x;
+	star[index].prev_y = star[index].start_y;
+	star[index].slope = (float)(star[index].start_y - center_y) / (star[index].start_x - center_x);
+	star[index].ab_slope = fabs(star[index].slope);
+	star[index].ismove = 1;
+	star[index].nowrad = 0;
+	star[index].delaycount = 0;
+	star[index].isend = 0;
+	GetDirection(index);
+	putpixel(star[index].start_x, star[index].start_y, YELLOW);
+}
+
+void Initstage() 
+{
+	int index = 0;
+
+	totalstar =  stagestarcount[stage];
+	countEndStar = 0;
+	g_nowrad = 0;
+	hitstarcount = 0;
+	delaycount = 0;
+	clickCount = 0;
+
+	for (index = 0; index < stagestarcount[stage]; index++)
+	{
+		Initstar(index);
+	}
+}
 
 void drawrectangle(int xpos, int ypos, int color) 
 {
@@ -472,14 +518,58 @@ int CheckSuccess()
 
 void GotoNextStage()
 {
+	gotoxy(1, 1);
+	printf("                                                                                   ");
+	gotoxy(1, 1);
 	printf("clear!!!");
+	delay(200);
+	gotoxy(1, 1);
+	printf("                                                                                 ");
+	stage++;
+	if (stage < 10)
+	{
+		Initstage();
+	}
+	else
+	{
+		printf("finish!!!!");
+		delay(60);
+		isloop = 0;
+	}
 }
 
 void GameOver() 
-{	
-	printf("Fail!!!");
-}
+{
+	int index = 0;
 
+	for (index = 0; index < stagestarcount[stage]; index++)
+	{
+		star[index].ismove = 0;
+		drawcircle(star[index].now_x, star[index].now_y, star[index].nowrad, BLACK);
+	}
+	gotoxy(6, 1);
+	printf("                                                                                   ");
+	gotoxy(6, 1);
+	printf("Fail!!!");
+	gotoxy(6,2);
+	printf("continue??? Y : y N : n ");
+
+	gameOverInputKey = getch();
+
+	if (gameOverInputKey == 'n' || gameOverInputKey == 'N')
+	{
+		isloop = 0;
+	}
+	else 
+	{
+		stage = 0;
+		gotoxy(6,1);
+		printf("                                         ");
+		gotoxy(6,2);
+		printf("                                          ");
+		Initstage();
+	}
+}
 
 void main(void)
 {
