@@ -47,6 +47,7 @@ int clickCount = 0;
 int g_nowrad = 0;
 int maxrad = 150;
 
+int countEndStar = 0;
 int delaycount = 0;
 
 int center_x = WIDTH / 2;
@@ -62,6 +63,9 @@ void ReverseDirection(int index);
 void Moveline(int index, int color);
 void drawrectangle(int xpos, int ypos, int color);
 void mousepointer();
+void BiggerCircle(int xpos, int ypos, int color);
+void StarBiggerCircle(int xpos, int ypos, int color, int pointerindex);
+void CheckHitPoint(int xpos, int ypos,int nowrad);
 
 void drawrectangle(int xpos, int ypos, int color) 
 {
@@ -327,6 +331,26 @@ void PingPong()
 	}
 }
 
+void CheckHitPoint(int xpos, int ypos,int nowrad)
+{
+	double pointrad = 0;
+	double rad = nowrad * nowrad;
+	int index = 0;
+
+	for(index = 0; index <stagestarcount[stage]; index++)
+	{
+		if(star[index].ismove == 1)
+		{
+			pointrad = ((star[index].now_x - (double)xpos) *(star[index].now_x - (double)xpos)) + ((star[index].now_y - (double)ypos)*(star[index].now_y - (double)ypos));
+			if (pointrad > 0 && pointrad < rad)
+			{
+				star[index].ismove = 0;
+			}
+		}
+	}
+}
+
+
 void drawcircle(int xpos, int ypos, int rad, int color)
 {
 	setcolor(color);
@@ -344,6 +368,7 @@ void BiggerCircle(int xpos, int ypos,int color)
 	if (g_nowrad < maxrad)
 	{
 		drawcircle(xpos, ypos, g_nowrad, color);
+		CheckHitPoint(xpos,ypos, g_nowrad++);
 	}
 	else
 	{
@@ -360,6 +385,53 @@ void BiggerCircle(int xpos, int ypos,int color)
 		}
 	}
 }
+
+
+void MakeCircle()
+{
+	int index = 0;
+
+	for (index = 0; index < stagestarcount[stage]; index++)
+	{
+
+		if (star[index].ismove == 0 && star[index].isend == 0)
+		{
+			StarBiggerCircle(star[index].now_x, star[index].now_y, YELLOW, index);
+		}
+	}
+}
+
+void StarBiggerCircle(int xpos, int ypos, int color, int pointerindex)
+{
+	int prevrad = star[pointerindex].nowrad-1;
+
+	if(prevrad > 0)
+	{
+		drawcircle(xpos, ypos, prevrad, BLACK);
+	}
+	if (star[pointerindex].nowrad <maxrad)
+	{
+		drawcircle(xpos, ypos, star[pointerindex].nowrad, color);
+		CheckHitPoint(xpos,ypos,star[pointerindex].nowrad++);
+	}
+	else
+	{
+		if (star[pointerindex].delaycount < 30)
+		{
+			drawcircle(xpos, ypos, star[pointerindex].nowrad, color);
+			star[pointerindex].delaycount++;
+
+		}
+		else
+		{
+			drawcircle(xpos, ypos, star[pointerindex].nowrad, BLACK);
+			star[pointerindex].nowrad = maxrad;
+			star[pointerindex].isend = 1;
+			countEndStar++;
+		}
+	}
+}
+
 
 void main(void)
 {
@@ -407,6 +479,7 @@ void main(void)
 		{
 			BiggerCircle(g_circle_xpos, g_circle_ypos, YELLOW);
 		}
+        	MakeCircle();
 	}
 
 	closegraph();
