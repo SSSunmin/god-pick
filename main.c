@@ -5,16 +5,302 @@
 #include<math.h>
 #include<graphics.h>
 
+#define WIDTH 640
+#define HEIGHT 480
 #define UIBOXWIDTH 600
 #define UIBOXHEIGHT 450
+#define STARCOUNT 100
+
+void GetDirection(int index);
+void ReverseDirection(int index);
+void Moveline(int index, int color);
+void drawrectangle(int xpos, int ypos, int color);
+void mousepointer();
+
+int isloop = 1;
+int stage = 0;
+
+int uiStartX = (WIDTH - UIBOXWIDTH) ;
+int uiStartY = (HEIGHT - UIBOXHEIGHT)+5;
 
 int g_pointX = 0;
 int g_pointY = 0;
 int g_pointprevX = 0;
 int g_pointprevY = 0;
 
+int center_x = WIDTH / 2;
+int center_y = HEIGHT / 2;
+int stagestarcount[10] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
 
 union REGS reg;
+
+struct  Star
+{
+	float ab_slope;
+	float slope;
+	int start_x;
+	int start_y;
+	int prev_x;
+	int prev_y;
+	int now_x;
+	int now_y;
+	int direction;
+	int ismove;
+	int nowrad;
+	int delaycount;
+	int isend;
+};
+
+struct Star star[STARCOUNT];
+
+void ReverseDirection(int index)
+{
+	star[index].start_x = star[index].now_x;
+	star[index].start_y = star[index].now_y;
+	star[index].prev_x = star[index].start_x;
+	star[index].prev_y = star[index].start_y;
+	star[index].slope = star[index].slope * -1;
+	star[index].ab_slope = fabs(star[index].slope);
+}
+
+void GetDirection(int index)
+{
+	if (star[index].slope >= 0 && star[index].ab_slope < 1)
+	{
+		if (star[index].start_x < WIDTH - uiStartX && star[index].start_y < HEIGHT - uiStartY)
+		{
+			star[index].direction = 1;
+		}
+		else
+		{
+			star[index].direction = 7;
+		}
+	}
+	else if (star[index].slope >= 0 && star[index].ab_slope >= 1)
+	{
+
+		if (star[index].start_y < HEIGHT - uiStartY && star[index].start_x < WIDTH-uiStartX)
+		{
+			star[index].direction = 2;
+		}
+		else
+		{
+			star[index].direction = 8;
+		}
+	}
+	else if (star[index].slope < 0 && star[index].ab_slope < 1)
+	{
+		if (star[index].start_x < WIDTH - uiStartX && star[index].start_y > uiStartY)
+		{
+			star[index].direction = 3;
+		}
+		else
+		{
+			star[index].direction = 5;
+		}
+	}
+	else if (star[index].slope < 0 && star[index].ab_slope >= 1)
+	{
+		if (star[index].start_y > uiStartY && star[index].start_x < WIDTH - uiStartX)
+		{
+			star[index].direction = 4;
+		}
+		else
+		{
+			star[index].direction = 6;
+		}
+	}
+}
+
+
+void Moveline(int index, int color)
+{
+	double tmp = 0;
+	if(star[index].ismove == 0)
+	{
+		putpixel(star[index].now_x, star[index].now_y, 0);
+		return;
+	}
+
+	switch (star[index].direction)
+	{
+	case 1:
+		if (star[index].now_x < WIDTH - uiStartX && star[index].now_y < HEIGHT-uiStartY)
+		{
+			tmp = floor((star[index].slope * (star[index].now_x - star[index].start_x) + (star[index].start_y)) + 0.5f);
+			star[index].prev_x = star[index].now_x;
+			star[index].prev_y = star[index].now_y;
+			star[index].now_y = tmp;
+			star[index].now_x++;
+			putpixel(star[index].now_x, star[index].now_y, color);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+		}
+		else
+		{
+			putpixel(star[index].now_x, star[index].now_y, 0);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+			ReverseDirection(index);
+			GetDirection(index);
+		}
+		break;
+	case 2:
+		if (star[index].now_y < HEIGHT-uiStartY && star[index].now_x < WIDTH-uiStartX)
+		{
+			tmp = floor(((star[index].now_y - star[index].start_y) / star[index].slope + star[index].start_x) + 0.5f);
+			star[index].prev_x = star[index].now_x;
+			star[index].prev_y = star[index].now_y;
+			star[index].now_x = tmp;
+			star[index].now_y++;
+			putpixel(star[index].now_x, star[index].now_y, color);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+		}
+		else
+		{
+			putpixel(star[index].now_x, star[index].now_y, 0);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+			ReverseDirection(index);
+			GetDirection(index);
+		}
+		break;
+	case 3:
+
+		if (star[index].now_x < WIDTH-uiStartX && star[index].now_y > uiStartY)
+		{
+			tmp = floor((star[index].slope  * (star[index].now_x - star[index].start_x) - (star[index].start_y)*-1) + 0.5f);
+			star[index].prev_x = star[index].now_x;
+			star[index].prev_y = star[index].now_y;
+			star[index].now_y = tmp;
+			star[index].now_x++;
+			putpixel(star[index].now_x, star[index].now_y, color);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+		}
+		else
+		{
+			putpixel(star[index].now_x, star[index].now_y, 0);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+			ReverseDirection(index);
+			GetDirection(index);
+		}
+		break;
+	case 4:
+		if (star[index].now_y > uiStartY && star[index].now_x < WIDTH-uiStartX)
+		{
+			tmp = floor((((star[index].now_y - star[index].start_y) / star[index].slope + star[index].start_x)) + 0.5f);
+			star[index].prev_x = star[index].now_x;
+			star[index].prev_y = star[index].now_y;
+			star[index].now_x = tmp;
+			star[index].now_y--;
+			putpixel(star[index].now_x, star[index].now_y, color);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+		}
+		else
+		{
+			putpixel(star[index].now_x, star[index].now_y, 0);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+			ReverseDirection(index);
+			GetDirection(index);
+		}
+		break;
+	case 5:
+		if (star[index].now_x > uiStartX && star[index].now_y < HEIGHT-uiStartY)
+		{
+			tmp = floor(((star[index].slope  * (star[index].now_x - star[index].start_x) + (star[index].start_y))) + 0.5f);
+			star[index].prev_x = star[index].now_x;
+			star[index].prev_y = star[index].now_y;
+			star[index].now_y = tmp;
+			star[index].now_x--;
+			putpixel(star[index].now_x, star[index].now_y, color);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+		}
+		else
+		{
+			putpixel(star[index].now_x, star[index].now_y, 0);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+			ReverseDirection(index);
+			GetDirection(index);
+		}
+		break;
+	case 6:
+		if (star[index].now_y < HEIGHT-uiStartY && star[index].now_x > uiStartX)
+		{
+			tmp = floor(((star[index].now_y - star[index].start_y) / star[index].slope + star[index].start_x) + 0.5f);
+			star[index].prev_x = star[index].now_x;
+			star[index].prev_y = star[index].now_y;
+			star[index].now_x = tmp;
+			star[index].now_y++;
+			putpixel(star[index].now_x, star[index].now_y, color);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+		}
+		else
+		{
+			putpixel(star[index].now_x, star[index].now_y, 0);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+			ReverseDirection(index);
+			GetDirection(index);
+		}
+		break;
+	case 7:
+		if (star[index].now_x > uiStartX && star[index].now_y > uiStartY)
+		{
+			tmp = floor((star[index].slope  * (star[index].now_x - star[index].start_x) + (star[index].start_y)) + 0.5f);
+			star[index].prev_x = star[index].now_x;
+			star[index].prev_y = star[index].now_y;
+			star[index].now_y = tmp;
+			star[index].now_x--;
+			putpixel(star[index].now_x, star[index].now_y, color);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+		}
+		else
+		{
+			putpixel(star[index].now_x, star[index].now_y, 0);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+			ReverseDirection(index);
+			GetDirection(index);
+		}
+		break;
+	case 8:
+		if (star[index].now_y > uiStartY && star[index].now_x > uiStartX)
+		{
+			tmp = floor(((star[index].now_y - star[index].start_y) / star[index].slope + star[index].start_x) + 0.5f);
+			star[index].prev_x = star[index].now_x;
+			star[index].prev_y = star[index].now_y;
+			star[index].now_x = tmp;
+			star[index].now_y--;
+			putpixel(star[index].now_x, star[index].now_y, color);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+		}
+		else
+		{
+			putpixel(star[index].now_x, star[index].now_y, 0);
+			putpixel(star[index].prev_x, star[index].prev_y, 0);
+			ReverseDirection(index);
+			GetDirection(index);
+		}
+		break;
+	}
+}
+
+void PingPong()
+{
+	int index;
+	index = 0;
+	while (index < stagestarcount[stage] && isloop)
+	{
+		Moveline(index, YELLOW);
+
+		if(kbhit())
+		{
+			key = getch();
+			if (key == 'q' || key == 'Q')
+			{
+				isloop = 0;
+				return;
+			}
+		}
+		index++;
+
+	}
+}
 
 void drawrectangle(int xpos, int ypos, int color) 
 {
@@ -63,6 +349,7 @@ void main(void)
 		gotoxy(6,1);
 		drawrectangle(uiStartX, uiStartY, RED);
 		mousepointer();
+        PingPong();
 	}
 
 	closegraph();
