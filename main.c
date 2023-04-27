@@ -29,6 +29,7 @@ struct  Star
 
 
 int key = 1;
+int gameOverInputKey = 1;
 int isloop = 1;
 int stage = 0;
 int isdrawcircle = 0;
@@ -42,14 +43,18 @@ int g_pointprevX = 0;
 int g_pointprevY = 0;
 int g_circle_xpos = 0;
 int g_circle_ypos = 0;
-
-int clickCount = 0;
 int g_nowrad = 0;
 int maxrad = 150;
 
+int clickCount = 0;
 int countEndStar = 0;
-int delaycount = 0;
+int totalstar = 0;
+int hitstarcount = 0;
 
+int delaycount = 0;
+int delayspeed = 10;
+
+int hitstarindex[STARCOUNT];
 int center_x = WIDTH / 2;
 int center_y = HEIGHT / 2;
 int stagestarcount[10] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
@@ -350,7 +355,6 @@ void CheckHitPoint(int xpos, int ypos,int nowrad)
 	}
 }
 
-
 void drawcircle(int xpos, int ypos, int rad, int color)
 {
 	setcolor(color);
@@ -385,7 +389,6 @@ void BiggerCircle(int xpos, int ypos,int color)
 		}
 	}
 }
-
 
 void MakeCircle()
 {
@@ -432,6 +435,51 @@ void StarBiggerCircle(int xpos, int ypos, int color, int pointerindex)
 	}
 }
 
+int CheckSuccess()
+{
+	int index, count, count2 , returnnum;
+	index = 0;
+	count = 0;
+	count2 = 0;
+	returnnum = 0;
+
+	for (index = 0; index < stagestarcount[stage]; index++)
+	{
+
+		if (star[index].ismove == 0 )
+		{
+			count++;
+			if (star[index].isend == 1)
+			{
+				count2++;
+			}
+		}
+	}
+	if (count > 0 && count == count2)
+	{
+		if (count2 == stagestarcount[stage]) // success
+		{
+			returnnum = 1;
+		}
+		else // fail
+		{
+			returnnum = 2;
+		}
+	}
+
+	return returnnum;
+}
+
+void GotoNextStage()
+{
+	printf("clear!!!");
+}
+
+void GameOver() 
+{	
+	printf("Fail!!!");
+}
+
 
 void main(void)
 {
@@ -462,9 +510,11 @@ void main(void)
 		reg.x.ax = 3;
 		int86(0x33,&reg,&reg);
 		gotoxy(6,1);
+        printf("stage : %d   /   remining star : %d ", stage , totalstar - countEndStar);
 		drawrectangle(uiStartX, uiStartY, RED);
 		mousepointer();
         PingPong();
+
         if(reg.x.bx & 1 && isdrawcircle == 0)
 		{
 			if (clickCount < 1)
@@ -475,11 +525,28 @@ void main(void)
 				clickCount++;
 			}
 		}
+
 		if(isdrawcircle)
 		{
 			BiggerCircle(g_circle_xpos, g_circle_ypos, YELLOW);
 		}
-        	MakeCircle();
+
+        MakeCircle();
+
+        if (clickCount == 1)
+		{
+			successState = CheckSuccess();
+			switch (successState)
+			{
+				case 1:
+					GotoNextStage();
+					break;
+				case 2:
+					GameOver();
+					break;
+			}
+		}
+			delay(delayspeed);
 	}
 
 	closegraph();
