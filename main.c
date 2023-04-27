@@ -10,30 +10,6 @@
 #define UIBOXWIDTH 600
 #define UIBOXHEIGHT 450
 #define STARCOUNT 100
-
-void GetDirection(int index);
-void ReverseDirection(int index);
-void Moveline(int index, int color);
-void drawrectangle(int xpos, int ypos, int color);
-void mousepointer();
-
-int isloop = 1;
-int stage = 0;
-
-int uiStartX = (WIDTH - UIBOXWIDTH) ;
-int uiStartY = (HEIGHT - UIBOXHEIGHT)+5;
-
-int g_pointX = 0;
-int g_pointY = 0;
-int g_pointprevX = 0;
-int g_pointprevY = 0;
-
-int center_x = WIDTH / 2;
-int center_y = HEIGHT / 2;
-int stagestarcount[10] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-
-union REGS reg;
-
 struct  Star
 {
 	float ab_slope;
@@ -51,7 +27,57 @@ struct  Star
 	int isend;
 };
 
+
+int key = 1;
+int isloop = 1;
+int stage = 0;
+int isdrawcircle = 0;
+
+int uiStartX = (WIDTH - UIBOXWIDTH) ;
+int uiStartY = (HEIGHT - UIBOXHEIGHT)+5;
+
+int g_pointX = 0;
+int g_pointY = 0;
+int g_pointprevX = 0;
+int g_pointprevY = 0;
+int g_circle_xpos = 0;
+int g_circle_ypos = 0;
+
+int clickCount = 0;
+int g_nowrad = 0;
+int maxrad = 150;
+
+int delaycount = 0;
+
+int center_x = WIDTH / 2;
+int center_y = HEIGHT / 2;
+int stagestarcount[10] = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+
+union REGS reg;
+
 struct Star star[STARCOUNT];
+
+void GetDirection(int index);
+void ReverseDirection(int index);
+void Moveline(int index, int color);
+void drawrectangle(int xpos, int ypos, int color);
+void mousepointer();
+
+void drawrectangle(int xpos, int ypos, int color) 
+{
+	setcolor(color);
+	rectangle(xpos, ypos, UIBOXWIDTH, UIBOXHEIGHT);
+}
+
+void mousepointer()
+{
+	g_pointprevX = g_pointX;
+	g_pointprevY = g_pointY;
+	g_pointX =reg.x.cx;
+	g_pointY = reg.x.dx;
+	putpixel(g_pointprevX, g_pointprevY, BLACK);
+	putpixel(g_pointX, g_pointY,WHITE);
+}
 
 void ReverseDirection(int index)
 {
@@ -111,7 +137,6 @@ void GetDirection(int index)
 		}
 	}
 }
-
 
 void Moveline(int index, int color)
 {
@@ -302,20 +327,38 @@ void PingPong()
 	}
 }
 
-void drawrectangle(int xpos, int ypos, int color) 
+void drawcircle(int xpos, int ypos, int rad, int color)
 {
 	setcolor(color);
-	rectangle(xpos, ypos, UIBOXWIDTH, UIBOXHEIGHT);
+	circle(xpos, ypos, rad);
 }
 
-void mousepointer()
+void BiggerCircle(int xpos, int ypos,int color)
 {
-	g_pointprevX = g_pointX;
-	g_pointprevY = g_pointY;
-	g_pointX =reg.x.cx;
-	g_pointY = reg.x.dx;
-	putpixel(g_pointprevX, g_pointprevY, BLACK);
-	putpixel(g_pointX, g_pointY,WHITE);
+	int prevrad = g_nowrad -1;
+
+	if(prevrad > 0)
+	{
+		drawcircle(xpos, ypos, prevrad, BLACK);
+	}
+	if (g_nowrad < maxrad)
+	{
+		drawcircle(xpos, ypos, g_nowrad, color);
+	}
+	else
+	{
+		if (delaycount < 30)
+		{
+			drawcircle(xpos, ypos, g_nowrad,color);
+			delaycount++;
+		}
+		else
+		{
+			drawcircle(xpos, ypos, g_nowrad, BLACK);
+			isdrawcircle = 0;
+			g_nowrad = 0;
+		}
+	}
 }
 
 void main(void)
@@ -350,6 +393,20 @@ void main(void)
 		drawrectangle(uiStartX, uiStartY, RED);
 		mousepointer();
         PingPong();
+        if(reg.x.bx & 1 && isdrawcircle == 0)
+		{
+			if (clickCount < 1)
+			{
+				isdrawcircle = 1;
+				g_circle_xpos = g_pointX;
+				g_circle_ypos = g_pointY;
+				clickCount++;
+			}
+		}
+		if(isdrawcircle)
+		{
+			BiggerCircle(g_circle_xpos, g_circle_ypos, YELLOW);
+		}
 	}
 
 	closegraph();
